@@ -54,8 +54,10 @@
             <el-popover
                 placement="bottom-start"
                 :width="300"
-                trigger="click"
+                :append-to-body="true"
                 v-model:visible="catalogTreeVisible"
+                :teleported="true"
+                trigger="manual"
                 popper-class="catalog-tree-popover"
             >
               <template #reference>
@@ -63,19 +65,21 @@
                     v-model="selectedCatalogName"
                     readonly
                     placeholder="点击选择目录"
-                    @click="catalogTreeVisible = true"
+                    @click.stop="catalogTreeVisible = true"
                 ></el-input>
               </template>
-              <el-tree
-                  :data="catalogTreeData"
-                  node-key="id"
-                  :props="{
-                    label: 'label',
-                    children: 'children'
-                  }"
-                  default-expand-all
-                  @node-click="handleNodeClick"
-              ></el-tree>
+              <div class="tree-container">
+                <el-tree
+                    :data="catalogTreeData"
+                    :props="{
+          label: 'label',
+          children: 'children'
+        }"
+                    default-expand-all
+                    node-key="id"
+                    @node-click="handleNodeClick"
+                ></el-tree>
+              </div>
             </el-popover>
             <input type="hidden" v-model="formData.catalogId">
           </el-form-item>
@@ -105,8 +109,8 @@
 </template>
 
 <script setup>
-import {ref, onMounted, nextTick, watch} from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import {nextTick, onMounted, ref, watch} from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
@@ -147,7 +151,6 @@ const handleNodeClick = (data) => {
   selectedCatalogName.value = data.label
   catalogTreeVisible.value = false
 }
-
 // 添加目录数据
 const catalogTreeData = ref([])
 const loadCatalogTree = async () => {
@@ -436,7 +439,7 @@ const handleSave = async () => {
     await request.post('/api/area/save', formData.value)
     ElMessage.success('保存成功')
     drawerVisible.value = false
-    loadAreas()
+    await loadAreas()
   } catch (error) {
     ElMessage.error('保存失败')
     console.error('保存失败:', error)
@@ -492,5 +495,25 @@ const handleSave = async () => {
   border-top: 1px solid #e4e7ed;
   background: #fff;
   text-align: right;
+}
+/* 添加树形容器样式 */
+.tree-container {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+/* 美化滚动条 */
+.tree-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tree-container::-webkit-scrollbar-thumb {
+  background-color: #c0c4cc;
+  border-radius: 3px;
+}
+
+.tree-container::-webkit-scrollbar-track {
+  background-color: #f5f7fa;
 }
 </style>

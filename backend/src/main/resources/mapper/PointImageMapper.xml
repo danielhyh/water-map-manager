@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.water.backend.mapper.PointImageMapper">
+    <insert id="insert" parameterType="com.water.backend.entity.PointImage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO point_image (title, description, image_url, points)
+        VALUES (#{title}, #{description}, #{imageUrl}, CAST(#{points} AS json))
+    </insert>
+
+    <update id="updateById" parameterType="com.water.backend.entity.PointImage">
+        UPDATE point_image
+        SET title = #{title},
+            description = #{description},
+            image_url = #{imageUrl},
+            points = CAST(#{points} AS json),
+            update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" resultType="com.water.backend.entity.PointImage">
+        SELECT
+            id, title, description, image_url as imageUrl,
+            points::text as points,
+                create_time as createTime, update_time as updateTime
+        FROM point_image
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectList" resultType="com.water.backend.entity.PointImage">
+        SELECT
+        id, title, description, image_url as imageUrl,
+        points::text as points,
+        create_time as createTime, update_time as updateTime
+        FROM point_image
+        <if test="ew != null">
+            <where>
+                ${ew.sqlSegment}
+            </where>
+        </if>
+    </select>
+
+    <!-- 如果您有关键词搜索方法，也需要添加 -->
+    <select id="findByKeyword" resultType="com.water.backend.entity.PointImage">
+        SELECT
+            id, title, description, image_url as imageUrl,
+            points::text as points,
+                create_time as createTime, update_time as updateTime
+        FROM point_image
+        WHERE title ILIKE CONCAT('%', #{keyword}, '%')
+           OR description ILIKE CONCAT('%', #{keyword}, '%')
+    </select>
+
+    <!-- 如果您有根据点位搜索的方法，也需要添加 -->
+    <select id="findByPoint" resultType="com.water.backend.entity.PointImage">
+        SELECT
+            id, title, description, image_url as imageUrl,
+            points::text as points,
+                create_time as createTime, update_time as updateTime
+        FROM point_image
+        WHERE points @> ANY(ARRAY[jsonb_build_object('lat', #{lat}, 'lng', #{lng})]::jsonb[])
+    </select>
+</mapper>

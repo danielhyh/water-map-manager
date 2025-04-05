@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.water.backend.mapper.AreaDescriptionMapper">
+    <insert id="insert" parameterType="com.water.backend.entity.AreaDescription" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO area_description (name, catalog_id, area_bounds, description)
+        VALUES (#{name}, #{catalogId}, ST_SetSRID(ST_GeomFromGeoJSON(#{areaBounds}), 4326), #{description})
+    </insert>
+
+    <update id="updateById" parameterType="com.water.backend.entity.AreaDescription">
+        UPDATE area_description
+        SET name = #{name},
+            catalog_id = #{catalogId},
+            area_bounds = ST_SetSRID(ST_GeomFromGeoJSON(#{areaBounds}), 4326),
+            description = #{description},
+            update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" resultType="com.water.backend.entity.AreaDescription">
+        SELECT
+            id, name, catalog_id as catalogId,
+            ST_AsGeoJSON(area_bounds) as areaBounds,
+            description, create_time as createTime, update_time as updateTime
+        FROM area_description
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectList" resultType="com.water.backend.entity.AreaDescription">
+        SELECT
+        id, name, catalog_id as catalogId,
+        ST_AsGeoJSON(area_bounds) as areaBounds,
+        description, create_time as createTime, update_time as updateTime
+        FROM area_description
+        <if test="ew != null">
+            <where>
+                ${ew.sqlSegment}
+            </where>
+        </if>
+    </select>
+</mapper>

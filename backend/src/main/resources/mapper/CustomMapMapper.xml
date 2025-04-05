@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.water.backend.mapper.CustomMapDataMapper">
+    <insert id="insert" parameterType="com.water.backend.entity.CustomMapData" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO custom_map_data (name, catalog_id, map_type, map_data, visible)
+        VALUES (#{name}, #{catalogId}, #{mapType}, CAST(#{mapData} AS json), #{visible})
+    </insert>
+
+    <update id="updateById" parameterType="com.water.backend.entity.CustomMapData">
+        UPDATE custom_map_data
+        SET name = #{name},
+            catalog_id = #{catalogId},
+            map_type = #{mapType},
+            map_data = CAST(#{mapData} AS json),
+            visible = #{visible},
+            update_time = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+    </update>
+
+    <select id="selectById" resultType="com.water.backend.entity.CustomMapData">
+        SELECT
+            id, name, catalog_id as catalogId, map_type as mapType,
+            map_data::text as mapData, visible,
+            create_time as createTime, update_time as updateTime
+        FROM custom_map_data
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectList" resultType="com.water.backend.entity.CustomMapData">
+        SELECT
+        id, name, catalog_id as catalogId, map_type as mapType,
+        map_data::text as mapData, visible,
+        create_time as createTime, update_time as updateTime
+        FROM custom_map_data
+        <if test="ew != null">
+            <where>
+                ${ew.sqlSegment}
+            </where>
+        </if>
+    </select>
+</mapper>

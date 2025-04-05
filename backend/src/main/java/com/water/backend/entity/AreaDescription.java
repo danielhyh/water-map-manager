@@ -15,7 +15,6 @@ public class AreaDescription {
     private Long id;
     private String name;
     private String catalogId;
-    // 使用String存储WKT格式的几何数据
     private String areaBounds;
     private String description;
     private Date createTime;

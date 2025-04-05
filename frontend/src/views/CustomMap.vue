@@ -7,7 +7,11 @@
       </div>
       <el-table :data="mapList" height="calc(100% - 50px)" border>
         <el-table-column prop="name" label="地图名称" width="180" />
-        <el-table-column prop="catalogId" label="目录ID" width="100" />
+        <el-table-column label="关联目录" width="180">
+          <template #default="scope">
+            {{ getCatalogName(scope.row.catalogId) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="mapType" label="地图类型" width="100" />
         <el-table-column prop="visible" label="是否可见" width="80">
           <template #default="scope">
@@ -38,20 +42,38 @@
         <el-form-item label="地图名称" required>
           <el-input v-model="formData.name"></el-input>
         </el-form-item>
-        <el-form-item label="关联目录ID" required>
-          <el-select
-              v-model="formData.catalogId"
-              placeholder="请选择关联目录"
-              filterable
-              style="width: 100%"
+        <el-form-item label="关联目录" required>
+          <el-popover
+              v-model:visible="catalogTreeVisible"
+              :append-to-body="true"
+              :teleported="true"
+              :width="300"
+              placement="bottom-start"
+              popper-class="catalog-tree-popover"
+              trigger="manual"
           >
-            <el-option
-                v-for="item in flatCatalogList"
-                :key="item.id"
-                :label="item.label"
-                :value="item.id"
-            ></el-option>
-          </el-select>
+            <template #reference>
+              <el-input
+                  v-model="selectedCatalogName"
+                  placeholder="点击选择关联目录"
+                  readonly
+                  @click.stop="catalogTreeVisible = true"
+              ></el-input>
+            </template>
+            <div class="tree-container">
+              <el-tree
+                  :data="catalogTreeData"
+                  :props="{
+            label: 'label',
+            children: 'children'
+          }"
+                  default-expand-all
+                  node-key="id"
+                  @node-click="handleNodeClick"
+              ></el-tree>
+            </div>
+          </el-popover>
+          <input v-model="formData.catalogId" type="hidden">
         </el-form-item>
         <el-form-item label="地图类型" required>
           <el-select v-model="formData.mapType" style="width: 100%">
@@ -94,11 +116,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import {nextTick, onMounted, ref} from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { toGeoJSON } from '@mapbox/togeojson'
+import {toGeoJSON} from '@mapbox/togeojson'
 import request from "../utils/request.js";
 
 // 数据
@@ -114,25 +136,37 @@ const formData = ref({
 })
 
 // 目录树相关
+// 新增状态变量
+const catalogTreeVisible = ref(false);
+const selectedCatalogName = ref('');
 const catalogTreeData = ref([])
-// 将树形结构扁平化处理，方便下拉选择
-const flatCatalogList = computed(() => {
-  const result = []
-  const flatten = (items, prefix = '') => {
-    if (!items) return
-    items.forEach(item => {
-      result.push({
-        id: item.id,
-        label: prefix + item.label
-      })
-      if (item.children && item.children.length) {
-        flatten(item.children, prefix + '└─ ')
+// 获取目录名称
+const getCatalogName = (catalogId) => {
+  if (!catalogId) return '未选择';
+
+  const findCatalogById = (items, id) => {
+    if (!items || !Array.isArray(items)) return null;
+
+    for (const item of items) {
+      if (item.id === id) {
+        return item;
       }
-    })
-  }
-  flatten(catalogTreeData.value)
-  return result
-})
+      if (item.children && item.children.length) {
+        const found = findCatalogById(item.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const catalog = findCatalogById(catalogTreeData.value, catalogId);
+  return catalog ? catalog.label : catalogId;
+}
+const handleNodeClick = (data) => {
+  formData.value.catalogId = data.id
+  selectedCatalogName.value = data.label
+  catalogTreeVisible.value = false
+}
 
 // 加载目录树
 const loadCatalogTree = async () => {
@@ -241,8 +275,8 @@ const handleAdd = () => {
     mapData: '',
     visible: true
   }
-
-  drawerVisible.value = true
+  selectedCatalogName.value = ''; // 重置选中的目录名称
+  drawerVisible.value = true;
 }
 
 // 预览地图数据
@@ -388,10 +422,23 @@ onMounted(() => {
 .tool-bar {
   margin-bottom: 10px;
 }
-.description-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 250px;
+.tree-container {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 5px;
+}
+
+/* 美化滚动条样式 */
+.tree-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tree-container::-webkit-scrollbar-thumb {
+  background-color: #c0c4cc;
+  border-radius: 3px;
+}
+
+.tree-container::-webkit-scrollbar-track {
+  background-color: #f5f7fa;
 }
 </style>
